@@ -5,8 +5,8 @@ from collections import Counter
 
 raw_data = data_loader.load_dataset()
 
-# Adversary (Intrusion Set) - Techniques associated 
-# 1. Understand the overall dataset structure
+# [Adversary (Intrusion Set) - Techniques associated]
+# Understand the overall dataset structure
 def info_dataset(raw_data):
     print("\n========== DATASET OVERVIEW ==========")
     print('Raw Data Keys: ', raw_data.keys())
@@ -30,23 +30,30 @@ def info_dataset(raw_data):
     intrusion_sets = {
         obj["id"]: obj
         for obj in objects
-        if obj["type"] == "intrusion-set"
+        if obj.get("type") == "intrusion-set"
+        and obj.get("id")
     }
 
     attack_patterns = {
         obj["id"]: obj
         for obj in objects
-        if obj["type"] == "attack-pattern"
+        if obj.get("type") == "attack-pattern"
+        and obj.get("id")
     }
 
     relationships = [
         obj for obj in objects
-        if obj["type"] == "relationship"
+        if obj.get("type") == "relationship"
     ]
 
     print("Intrusion sets:", len(intrusion_sets))
     print("Attack patterns:", len(attack_patterns))
     print("Total relationships:", len(relationships))
+
+    # Investigate revoked and deprecated objects
+    print("\n========== OBJECT STATUS ==========")
+    print("Revoked objects:", sum(obj.get("revoked", False) for obj in objects))
+    print("Deprecated objects:", sum(obj.get("x_mitre_deprecated", False) for obj in objects))
     
     # Investigate relationships between groups and techniques
     print("\n========== GROUP-TECHNIQUE RELATIONSHIPS ==========")
@@ -63,11 +70,20 @@ def info_dataset(raw_data):
         if source and target:
             group_technique_relationships.append(rel)
 
-    print("Counter of [Intrusion set]-[Technique] relationships:", len(group_technique_relationships))
+    print("Number of [Intrusion set]-[Technique] relationships:", len(group_technique_relationships))
 
+    # Count unique group-techniques associations
+    unique_pairs = {
+        (rel["source_ref"], rel["target_ref"])
+        for rel in group_technique_relationships
+    }
+    print("Number of unique group-technique pairs:", len(unique_pairs))
+
+    # Display and example relationshhip
     print("\n========== EXAMPLE RELATIONSHIP ==========")
-    group = intrusion_sets[group_technique_relationships[0]["source_ref"]]
-    technique = attack_patterns[group_technique_relationships[0]["target_ref"]]
+    rel = group_technique_relationships[0]
+    group = intrusion_sets[rel["source_ref"]]
+    technique = attack_patterns[rel["target_ref"]]
         
     group_external_ids = [
         ref.get("external_id")
@@ -89,7 +105,7 @@ def info_dataset(raw_data):
     print("  STIX ID:", technique.get("id"))
     print("  MITRE ID:", technique_external_ids)
 
-    print("Relationship Type:", group_technique_relationships.get("relationship_type"))
+    print("Relationship Type:", rel.get("relationship_type"))
 
    
 info_dataset(raw_data)
