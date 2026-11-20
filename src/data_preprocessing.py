@@ -89,9 +89,6 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
                 group_techniques[group_id].add(technique_external_id)
                 break # No need to keep searching for further references
 
-    # Keep only groups that have at least one technique (ARM does not need empty sets)
-    transactions = []
-
     for group_id, techniques in group_techniques.items():
 
         if techniques:
