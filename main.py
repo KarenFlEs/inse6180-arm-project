@@ -1,4 +1,4 @@
-from src import data_loader, data_exploration, data_preprocessing
+from src import data_loader, data_exploration, data_preprocessing, evaluation
 
 def main():
     print("\n========== MITRE ATT&CK ARM PROJECT ==========")
@@ -17,11 +17,15 @@ def main():
     print("Preprocessing completed!")
     print("Number of transactions:", len(transactions))
 
-    
+    # 4. Extract techniques only
+    print("\n4. Extracting ATT&CK techniques...")
+    technique_transactions = data_preprocessing.extract_techniques(transactions)
+    print("Technique extraction completed!")
 
-    # 4. Run association rule mining
-    print("\n4. Running association rule mining...")
-
+    # 5. Run association rule mining
+    print("\n5. Running association rule mining...")
+    support_thresholds = [0.05, 0.15, 0.25, 0.35, 0.45]
+    results = evaluation.run_experiments(technique_transactions, support_thresholds)
 
     print("\n========== Project executed successfully ==========")
 

@@ -152,3 +152,13 @@ def preprocess_dataset(raw_data):
     display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions)
     
     return transactions
+
+# 6. Extract only the ATT&CK Techniques from each transaction
+def extract_techniques(transactions):
+    technique_transactions = []
+
+    for transaction in transactions:
+        techniques = set(transaction["Techniques"])
+        technique_transactions.append(techniques)
+
+    return technique_transactions
