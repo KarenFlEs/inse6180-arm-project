@@ -2,7 +2,7 @@
 
 from itertools import combinations
 
-def apriori (db, minsup):
+def apriori (data, minsup):
     """
     Apriori algorithm.
 
@@ -13,15 +13,15 @@ def apriori (db, minsup):
     Returns:
         Dictionary containing frequent itemsets and their support.
     """
-    if not db:
+    if not data:
         return {}
 
     # Find frequent 1-itemsets
-    items = set (item for t in db for item in t)
+    items = set (item for t in data for item in t)
     L = {}
 
     for item in items:
-        support = sum(item in t for t in db) / len(db)
+        support = sum(item in t for t in data) / len(data)
         if support >= minsup:
             L[frozenset([item])] = support
 
@@ -50,7 +50,7 @@ def apriori (db, minsup):
         L_next = {}
 
         for candidate in candidates:
-            support = sum(candidate.issubset(t) for t in db) / len(db)
+            support = sum(candidate.issubset(t) for t in data) / len(data)
             if support >= minsup:
                 L_next[candidate] = support
 
@@ -59,3 +59,5 @@ def apriori (db, minsup):
         k += 1
 
     return frequent
+
+
