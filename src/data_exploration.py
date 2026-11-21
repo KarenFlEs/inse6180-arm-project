@@ -1,9 +1,7 @@
 '''Investigate the structure of the dataset to understand its objects, distributions and relationships.'''
 
-import data_loader
 from collections import Counter
 
-raw_data = data_loader.load_dataset()
 
 # [Adversary (Intrusion Set) - Techniques associated]
 # Understand the overall dataset structure
@@ -107,5 +105,3 @@ def info_dataset(raw_data):
 
     print("Relationship Type:", rel.get("relationship_type"))
 
-   
-info_dataset(raw_data)

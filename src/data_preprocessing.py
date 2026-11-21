@@ -6,10 +6,6 @@ Each intrusion set (group) represents a transaction
 containing the attack techniques associated with that group 
 '''
 
-import data_loader
-
-raw_data = data_loader.load_dataset()
-
 # Extract Relevant STIX Objects
 def extract_relevant_objects(raw_data):
     objects = raw_data.get('objects', [])
@@ -101,54 +97,58 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
             })
     return transactions
 
+# 4. Display preprocessing results
+def display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions):
+    print("\n========== PREPROCESSING RESULTS ==========")
 
-# 4. Execute the preprocessing pipeline
-intrusion_sets, attack_patterns, relationships = extract_relevant_objects(raw_data)
-group_technique_relationships = extract_group_technique_relationships(intrusion_sets,attack_patterns,relationships)
-transactions = create_transactions(intrusion_sets,attack_patterns,group_technique_relationships)
+    # Extract unique techniques
+    unique_techniques = {
+        technique
+        for transaction in transactions
+        for technique in transaction["techniques"]
+    }
+
+    # Identify groups without techniques
+    groups_with_transactions = {
+        transaction["group_id"]
+        for transaction in transactions
+    }
+
+    empty_groups = [
+        group_id
+        for group_id in intrusion_sets
+        if group_id not in groups_with_transactions
+    ]
+
+    # Display dataset statistics
+    print("Number of intrusion sets:", len(intrusion_sets))
+    print("Number of attack patterns:", len(attack_patterns))
+    print("Number of valid group-technique relationships:",
+        len(group_technique_relationships))
+
+    # Display transaction statistics
+    print("\n========== TRANSACTION VALIDATION ==========")
+
+    print("Number of non-empty transactions:", len(transactions))
+    print("Number of empty groups:", len(empty_groups))
+    print("Number of unique techniques:", len(unique_techniques))
+
+    # Display example transactions
+    print("\n========== EXAMPLE TRANSACTIONS ==========")
+
+    for i, transaction in enumerate(transactions[:3], start=1):
+        print(f"\nTransaction {i}")
+        print("Group ID:", transaction["group_id"])
+        print("Group Name:", transaction["group_name"])
+        print("Number of techniques:", len(transaction["techniques"]))
+        print("Techniques:", transaction["techniques"])
 
 
-# 5. Display preprocessing results
-print("\n========== PREPROCESSING RESULTS ==========")
-
-# Extract unique techniques
-unique_techniques = {
-    technique
-    for transaction in transactions
-    for technique in transaction["techniques"]
-}
-
-# Identify groups without techniques
-groups_with_transactions = {
-    transaction["group_id"]
-    for transaction in transactions
-}
-
-empty_groups = [
-    group_id
-    for group_id in intrusion_sets
-    if group_id not in groups_with_transactions
-]
-
-# Display dataset statistics
-print("Number of intrusion sets:", len(intrusion_sets))
-print("Number of attack patterns:", len(attack_patterns))
-print("Number of valid group-technique relationships:",
-      len(group_technique_relationships))
-
-# Display transaction statistics
-print("\n========== TRANSACTION VALIDATION ==========")
-
-print("Number of non-empty transactions:", len(transactions))
-print("Number of empty groups:", len(empty_groups))
-print("Number of unique techniques:", len(unique_techniques))
-
-# Display example transactions
-print("\n========== EXAMPLE TRANSACTIONS ==========")
-
-for i, transaction in enumerate(transactions[:5], start=1):
-    print(f"\nTransaction {i}")
-    print("Group ID:", transaction["group_id"])
-    print("Group Name:", transaction["group_name"])
-    print("Number of techniques:", len(transaction["techniques"]))
-    print("Techniques:", transaction["techniques"])
+# 5. Execute the preprocessing pipeline
+def preprocess_dataset(raw_data):
+    intrusion_sets, attack_patterns, relationships = extract_relevant_objects(raw_data)
+    group_technique_relationships = extract_group_technique_relationships(intrusion_sets,attack_patterns,relationships)
+    transactions = create_transactions(intrusion_sets,attack_patterns,group_technique_relationships)
+    display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions)
+    
+    return transactions
