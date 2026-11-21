@@ -1,9 +1,10 @@
 '''Implement FP_Growth Algorithm'''
 
 from collections import Counter 
+import math
 
 class Node:
-    def _init(self, item, parent=None):
+    def __init__(self, item, parent=None):
         self.item = item
         self.count = 1
         self.parent = parent
@@ -11,40 +12,64 @@ class Node:
         self.link = None
 
 class FPTree:
-    def _init_(self, data, minsup):
-        self.root = Node(None, 0, None)
+    def __init__(self, data, minsup, weights=None):
+        self.root = Node("ROOT")
+        self.root.count = 0
         self.minsup = minsup
         self.header_table = {}
-        self.build_tree(data)
+        self.build_tree(data, weights)
 
-    def build_tree(self, data):
+    def build_tree(self, data, weights=None):
+        if weights is None:
+            weights = [1] * len(data)
+
         # Count items, remove infrequent ones 
-        # Build header table 
-        # Sort data and insert 
         counts = Counter() 
-        for d in data:
-            counts.update(set(d))
+        for transaction, weight in zip(data, weights):
+            for item in set(transaction):
+                counts[item] += weight
 
         # Keep only frequent items 
         frequent = {
             item: count
-            for item, count in counts.item()
+            for item, count in counts.items()
             if count >= self.minsup
         }
-    
-        frequent = dict(sorted(frequent.items(), key=lambda x: x[1], reverse=True))
-        return 0
+
+        # Build header table 
+        self.header_table = {
+            item: [count, None, None] 
+            for item, count in frequent.items()
+        }
+
+        # Sort transactions and insert them into the FPTree
+        frequent = dict(sorted(frequent.items(), key=lambda x: (-x[1], x[0])))
+        for transaction, weight in zip(data, weights):
+            filtered = set(transaction) & frequent.keys()
+            ordered = sorted(filtered, key=lambda x: (-frequent[x], x))
+            self.insert_node(ordered, weight)
+
 
     # Insert data transactions into FPTree
-    def insert_node(root, node):
-        current = root
-        for item in node:
-            # If a cild already exists, imcrement its count. Otherwise, create a new one 
+    def insert_node(self, transaction, weight=1):
+        current = self.root
+        for item in transaction:
+            # If a child already exists, imcrement its count. Otherwise, create a new one 
             if item in current.children:
-                current.children[item].count += 1
+                current.children[item].count += weight
             else:
                 new_node = Node(item, current)
+                new_node.count = weight
                 current.children[item] = new_node
+
+                header = self.header_table[item]
+                if header[1] is None:
+                    header[1] = new_node
+                else:
+                    header[2].link = new_node
+
+                header[2] = new_node
+
             current = current.children[item]
 
 
@@ -60,9 +85,46 @@ def get_prefix_path(node):
     return path[::-1]
 
 def mine_tree(tree, minsup, prefix, patterns):
-    # Recursively mine frequent itemsets 
-    return 0
+    # Iterate through the header table
+    for item, info in tree.header_table.items():
+        support_count = info[0]
+        node = info[1]
+
+        # Generate the new frequent pattern
+        frequent_pattern = prefix | {item}
+        patterns[frozenset(frequent_pattern)] = support_count
+
+        # Build the conditional pattern base 
+        conditional_pattern_base = []
+
+        while node is not None:
+            path = get_prefix_path(node)
+            if path:
+                conditional_pattern_base.append((path, node.count))
+
+            node = node.link
+
+        if conditional_pattern_base:
+            conditional_data = [path for path, count in conditional_pattern_base]
+            conditional_weights = [count for path, count in conditional_pattern_base]
+            conditional_tree = FPTree(conditional_data,minsup,conditional_weights)
+
+            # Recursively mine conditional tree
+            if conditional_tree.header_table:
+                mine_tree(conditional_tree, minsup, frequent_pattern, patterns)
+
+    return patterns
 
 def fp_growth(data, minsup):
-    return 0
+    # Convert relative support to absolute support
+    minsup = math.ceil(minsup * len(data))
+
+    # Build initial FP-Tree
+    tree = FPTree(data, minsup)
+    patterns = {}
+
+    # Start mining
+    mine_tree(tree, minsup, set(), patterns)
+
+    return patterns
 
