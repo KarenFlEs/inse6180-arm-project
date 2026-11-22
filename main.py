@@ -1,4 +1,4 @@
-from src import data_loader, data_exploration, data_preprocessing, evaluation
+from src import data_loader, data_exploration, data_preprocessing, evaluation, visualization
 
 def main():
     print("\n========== MITRE ATT&CK ARM PROJECT ==========")
@@ -24,7 +24,7 @@ def main():
 
     # 5. Run association rule mining
     print("\n5. Running association rule mining...")
-    support_thresholds = [0.15, 0.20, 0.30, 0.40, 0.50]
+    support_thresholds = [0.15, 0.20, 0.25, 0.30, 0.35]
     min_confidence = 0.6
     repetitions = 5
     results = evaluation.run_experiments(technique_transactions, support_thresholds, min_confidence, repetitions)
@@ -39,6 +39,10 @@ def main():
     assert all(result["itemsets_agree"] for result in results)
     assert all(result["rules_agree"] for result in results)
     print("Both algorithms produced consistent results!")
+
+    #8. Generate Visualization
+    print("\n8. Generating Visualization...")
+    visualization.visualize_results(results)    
 
     print("\n========== Project executed successfully ==========")
 
