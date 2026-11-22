@@ -158,7 +158,7 @@ def extract_techniques(transactions):
     technique_transactions = []
 
     for transaction in transactions:
-        techniques = set(transaction["Techniques"])
+        techniques = set(transaction["techniques"])
         technique_transactions.append(techniques)
 
     return technique_transactions

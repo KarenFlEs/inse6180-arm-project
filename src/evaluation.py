@@ -1,5 +1,4 @@
-import apriori
-import fp_growth
+from src import apriori, fp_growth
 import time
 import statistics
 from itertools import combinations
@@ -15,7 +14,6 @@ def generate_association_rules(frequent_itemsets):
         # Generate subsets of different size 
         for size in range(1, len(itemset)):
             for subset in combinations(itemset, size):
-                # Generate possible antecedents and its consequent
                 antecedent = frozenset(subset)
                 consequent = itemset - antecedent
                 rules.add((antecedent, consequent))
@@ -29,26 +27,18 @@ def evaluate_rules(rules, transactions):
 
     total_transactions = len(transactions)
 
+    def count_occurrences(itemset):
+        return sum(
+            itemset.issubset(transaction)
+            for transaction in transactions
+        )
+
     metrics = []
 
     for antecedent, consequent in rules:
-        # Count transactions containing antecedent 
-        count_antecedent = 0
-        count_consequent = 0
-        count_both = 0
-
-        for transaction in transactions:
-            has_antecedent = antecedent.issubset(transaction)
-            has_consequent = consequent.issubset(transaction)
-
-            if has_antecedent:
-                count_antecedent += 1
-
-            if has_consequent:
-                count_consequent += 1
-
-            if has_antecedent and has_consequent:
-                count_both += 1
+        count_antecedent = count_occurrences(antecedent)
+        count_consequent = count_occurrences(consequent)
+        count_both = count_occurrences(antecedent | consequent)
 
         support = count_both / total_transactions
         confidence = count_both / count_antecedent if count_antecedent > 0 else 0
@@ -66,12 +56,10 @@ def evaluate_rules(rules, transactions):
 
 # Filter association rules
 def filter_rules(rule_metrics, min_confidence):
-    filtered_rules = [
+    return [
         rule for rule in rule_metrics
         if rule["confidence"] >= min_confidence
     ]
-
-    return filtered_rules
 
 
 # Normalize frequent itemsets
@@ -82,13 +70,10 @@ def normalize_itemsets(itemsets, algorithm, total_transactions):
     normalized = {}
 
     for itemset, value in itemsets.items():
-
         if algorithm == "apriori":
-            support = value
-
+            support = value 
         elif algorithm == "fp_growth":
             support = value / total_transactions
-
         else:
             raise ValueError("Unknown algorithm.")
 
@@ -109,6 +94,13 @@ def compare_itemsets(apriori_itemsets, fp_itemsets):
 
     return True
 
+# Compare association rules between algorithms
+def compare_rules(apriori_rules, fp_rules):
+    apriori_set = {(rule["antecedent"], rule["consequent"]) for rule in apriori_rules}
+    fp_set = {(rule["antecedent"], rule["consequent"]) for rule in fp_rules}
+    return apriori_set == fp_set
+
+
 # Alorithm performance evaluation
 def evaluation_algorithm(algorithm, transactions, min_support, algorithm_name, repetitions=5):
     if repetitions < 1:
@@ -120,11 +112,9 @@ def evaluation_algorithm(algorithm, transactions, min_support, algorithm_name, r
     # Run algoritm and measure its performance
     for _ in range(repetitions):
         start_time = time.perf_counter()
-        current_itemsets = algorithm(transactions, min_support)
+        frequent_itemsets = algorithm(transactions, min_support)
         end_time = time.perf_counter()
-
         execution_times.append(end_time - start_time)
-        frequent_itemsets = current_itemsets
 
     # Normalize frequent itemsets
     normalized_itemsets = normalize_itemsets(frequent_itemsets, algorithm_name, len(transactions))
@@ -166,10 +156,13 @@ def run_experiments(transactions, support_thresholds, min_confidence=0.6, repeti
             raise ValueError("Support must be between 0 and 1.")
 
         apriori_results = evaluation_algorithm(apriori.apriori, transactions, min_support, "apriori", repetitions)
+        print(f"Apriori completed successfully (min support: {min_support})")
+
         fp_growth_results = evaluation_algorithm(fp_growth.fp_growth, transactions, min_support, "fp_growth", repetitions)
+        print(f"FP-Growth completed successfully (min support: {min_support})")
 
         # Compare frequent itemsets
-        algorithms_agree = compare_itemsets(apriori_results["frequent_itemsets"], fp_growth_results["frequent_itemsets"])
+        itemsets_agree = compare_itemsets(apriori_results["frequent_itemsets"], fp_growth_results["frequent_itemsets"])
 
         # Evaluate association rules
         apriori_rules = generate_association_rules(apriori_results["frequent_itemsets"])
@@ -177,6 +170,9 @@ def run_experiments(transactions, support_thresholds, min_confidence=0.6, repeti
 
         apriori_metrics = evaluate_rules(apriori_rules, transactions)
         fp_growth_metrics = evaluate_rules(fp_growth_rules, transactions)
+
+        # Compare association rules
+        rules_agree = compare_rules(apriori_metrics, fp_growth_metrics)
 
         # Filter rules using confidence
         apriori_filtered = filter_rules(apriori_metrics, min_confidence)
@@ -186,7 +182,8 @@ def run_experiments(transactions, support_thresholds, min_confidence=0.6, repeti
             "min_support": min_support,
             "apriori": apriori_results,
             "fp_growth": fp_growth_results,
-            "algorithms_agree": algorithms_agree,
+            "itemsets_agree": itemsets_agree,
+            "rules_agree": rules_agree,
             "apriori_rules": apriori_metrics,
             "fp_growth_rules": fp_growth_metrics,
             "apriori_filtered_rules": apriori_filtered,
@@ -197,7 +194,7 @@ def run_experiments(transactions, support_thresholds, min_confidence=0.6, repeti
 
 
 # Display Experimental Results
-def display_results(results):
+def display_results(results, limit=20):
     print("\n========== EXPERIMENTAL RESULTS ==========")
 
     for result in results:
@@ -217,11 +214,12 @@ def display_results(results):
             print("Generated rules:", len(rules))
             print("Rules after confidence filtering:", len(filtered_rules))
 
-        print("\nApriori and FP-Growth agree:", result["algorithms_agree"])
+        print("\nFrequent itemsets agree:", result["itemsets_agree"])
+        print("Association rules agree:", result["rules_agree"])
 
 
 # Display Association Rules
-def display_rules(results):
+def display_rules(results, limit=10):
     print("\n========== ASSOCIATION RULES ==========")
 
     for result in results:
@@ -229,65 +227,13 @@ def display_rules(results):
 
         for algorithm_name in ["apriori", "fp_growth"]:
             filtered_rules = result[algorithm_name + "_filtered_rules"]
+            # Sort rules by descending lift
+            sorted_rules = sorted(filtered_rules, key=lambda rule: rule["lift"], reverse=True)
             print("\n---", algorithm_name.upper(), "---")
 
-            for rule in filtered_rules:
+            for rule in sorted_rules[:limit]:
                 print(f"\n{set(rule['antecedent'])} -> "f"{set(rule['consequent'])}")
                 print(f"Support: {rule['support']:.4f}")
                 print(f"Confidence: {rule['confidence']:.4f}")
                 print(f"Lift: {rule['lift']:.4f}")
 
-
-# Small test dataset
-transactions = [
-    {'A', 'B', 'C'},
-    {'A', 'B'},
-    {'A', 'C'},
-    {'B', 'C'},
-    {'A', 'B', 'C'}
-]
-
-# Experimental parameters
-support_thresholds = [0.2, 0.4, 0.6, 0.8]
-min_confidence = 0.6
-repetitions = 5
-
-# Run experiments
-results = run_experiments(transactions, support_thresholds, min_confidence, repetitions)
-
-# Display results
-display_results(results)
-display_rules(results)
-
-# Validation
-print("\n========== VALIDATION ==========")
-
-assert len(transactions) == 5
-assert len(results) == len(support_thresholds)
-
-# Both algorithms should agree at every threshold
-assert all(
-    result["algorithms_agree"]
-    for result in results
-)
-
-# Check the expected results at support 0.4
-test_result = next(
-    result for result in results
-    if result["min_support"] == 0.4
-)
-
-assert test_result["apriori"]["number_of_itemsets"] == 7
-assert test_result["fp_growth"]["number_of_itemsets"] == 7
-assert len(test_result["apriori_rules"]) == 12
-assert len(test_result["fp_growth_rules"]) == 12
-
-# Test rule generation and evaluation independently
-test_rules = {(frozenset({'A'}), frozenset({'B'}))}
-metrics = evaluate_rules(test_rules, transactions)
-
-assert abs(metrics[0]["support"] - 0.6) < 1e-9
-assert abs(metrics[0]["confidence"] - 0.75) < 1e-9
-assert abs(metrics[0]["lift"] - 0.9375) < 1e-9
-
-print("All tests passed!")

@@ -24,8 +24,21 @@ def main():
 
     # 5. Run association rule mining
     print("\n5. Running association rule mining...")
-    support_thresholds = [0.05, 0.15, 0.25, 0.35, 0.45]
-    results = evaluation.run_experiments(technique_transactions, support_thresholds)
+    support_thresholds = [0.15, 0.20, 0.30, 0.40, 0.50]
+    min_confidence = 0.6
+    repetitions = 5
+    results = evaluation.run_experiments(technique_transactions, support_thresholds, min_confidence, repetitions)
+
+    #6. Display experiemental results 
+    print("\n6. Displaying evaluation results...")
+    evaluation.display_results(results)
+    evaluation.display_rules(results)
+
+    #7. Validate algorithm agreement
+    print("\n7. Validating algorithm agreement...")
+    assert all(result["itemsets_agree"] for result in results)
+    assert all(result["rules_agree"] for result in results)
+    print("Both algorithms produced consistent results!")
 
     print("\n========== Project executed successfully ==========")
 
