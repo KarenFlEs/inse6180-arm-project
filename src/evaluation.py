@@ -219,7 +219,7 @@ def display_results(results, limit=20):
 
 
 # Display Association Rules
-def display_rules(results, limit=10):
+def display_rules(results, limit=5):
     print("\n========== ASSOCIATION RULES ==========")
 
     for result in results:
