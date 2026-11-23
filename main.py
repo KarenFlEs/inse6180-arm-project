@@ -13,7 +13,7 @@ def main():
 
     # 3. Preprocess dataset
     print("\n3. Preprocessing dataset...")
-    transactions = data_preprocessing.preprocess_dataset(raw_data)
+    transactions, technique_names = data_preprocessing.preprocess_dataset(raw_data)
     print("Preprocessing completed!")
     print("Number of transactions:", len(transactions))
 
@@ -42,7 +42,7 @@ def main():
 
     #8. Generate Visualization
     print("\n8. Generating Visualization...")
-    visualization.visualize_results(results)    
+    visualization.visualize_results(results, technique_names)    
 
     print("\n========== Project executed successfully ==========")
 

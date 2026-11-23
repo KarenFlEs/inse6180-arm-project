@@ -59,6 +59,7 @@ def extract_group_technique_relationships(intrusion_sets, attack_patterns, relat
 # Create ARM Transactions
 def create_transactions(intrusion_sets, attack_patterns, group_technique_relationships):
     transactions = []
+    technique_names = {}
 
     # Each key is an intrusion set ID and the values as the techniques used 
     group_techniques = {
@@ -77,12 +78,18 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
         if not attack_pattern:
             continue
 
+        # Extract technique name
+        technique_name = attack_pattern.get("name")
+
         for ref in attack_pattern.get("external_references", []):
             if ref.get("source_name") == "mitre-attack" and ref.get("external_id"):
                 technique_external_id = ref.get("external_id")
 
                 # Associate the technique with its group
                 group_techniques[group_id].add(technique_external_id)
+
+                # Map the technique ID to its name
+                technique_names[technique_external_id] = technique_name
                 break # No need to keep searching for further references
 
     for group_id, techniques in group_techniques.items():
@@ -95,7 +102,7 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
                 "group_name": group_name,
                 "techniques": sorted(techniques)
             })
-    return transactions
+    return transactions, technique_names
 
 # 4. Display preprocessing results
 def display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions):
@@ -148,10 +155,10 @@ def display_preprocessing_results(intrusion_sets, attack_patterns, group_techniq
 def preprocess_dataset(raw_data):
     intrusion_sets, attack_patterns, relationships = extract_relevant_objects(raw_data)
     group_technique_relationships = extract_group_technique_relationships(intrusion_sets,attack_patterns,relationships)
-    transactions = create_transactions(intrusion_sets,attack_patterns,group_technique_relationships)
+    transactions, technique_names = create_transactions(intrusion_sets,attack_patterns,group_technique_relationships)
     display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions)
     
-    return transactions
+    return transactions, technique_names
 
 # 6. Extract only the ATT&CK Techniques from each transaction
 def extract_techniques(transactions):
