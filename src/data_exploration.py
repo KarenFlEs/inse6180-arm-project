@@ -4,8 +4,9 @@ from collections import Counter
 
 
 # [Adversary (Intrusion Set) - Techniques associated]
-# Understand the overall dataset structure
 def info_dataset(raw_data):
+    """Explore the structure and relationships of the dataset."""
+
     print("\n========== DATASET OVERVIEW ==========")
     print('Raw Data Keys: ', raw_data.keys())
     objects = raw_data.get("objects", [])
@@ -50,8 +51,10 @@ def info_dataset(raw_data):
 
     # Investigate revoked and deprecated objects
     print("\n========== OBJECT STATUS ==========")
-    print("Revoked objects:", sum(obj.get("revoked", False) for obj in objects))
-    print("Deprecated objects:", sum(obj.get("x_mitre_deprecated", False) for obj in objects))
+    revoked_count = sum(obj.get("revoked", False) is True for obj in objects)
+    deprecated_count = sum(obj.get("x_mitre_deprecated", False) is True for obj in objects)
+    print("Revoked objects:", revoked_count)
+    print("Deprecated objects:", deprecated_count)
     
     # Investigate relationships between groups and techniques
     print("\n========== GROUP-TECHNIQUE RELATIONSHIPS ==========")
@@ -71,14 +74,15 @@ def info_dataset(raw_data):
     print("Number of [Intrusion set]-[Technique] relationships:", len(group_technique_relationships))
 
     # Count unique group-techniques associations
-    unique_pairs = {
-        (rel["source_ref"], rel["target_ref"])
-        for rel in group_technique_relationships
-    }
+    unique_pairs = {(rel["source_ref"], rel["target_ref"]) for rel in group_technique_relationships}
     print("Number of unique group-technique pairs:", len(unique_pairs))
 
-    # Display and example relationshhip
+    # Display an example reliationship
     print("\n========== EXAMPLE RELATIONSHIP ==========")
+    if not group_technique_relationships:
+        print("No group-technique relationships were found.")
+        return
+    
     rel = group_technique_relationships[0]
     group = intrusion_sets[rel["source_ref"]]
     technique = attack_patterns[rel["target_ref"]]
@@ -93,6 +97,7 @@ def info_dataset(raw_data):
         for ref in technique.get("external_references", [])
         if ref.get("external_id")
     ]
+    
     print("\nIntrusion Set:")
     print("  Name:", group.get("name"))
     print("  STIX ID:", group.get("id"))

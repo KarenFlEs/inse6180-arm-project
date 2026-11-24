@@ -3,7 +3,7 @@ from src import data_loader, data_exploration, data_preprocessing, evaluation, v
 def main():
     print("\n========== MITRE ATT&CK ARM PROJECT ==========")
 
-    # Load MITRE ATT&CK dataset
+    # 1. Load MITRE ATT&CK dataset
     print("\n1. Loading MITRE ATT&CK dataset...")
     raw_data = data_loader.load_dataset()
 
@@ -14,35 +14,42 @@ def main():
     # 3. Preprocess dataset
     print("\n3. Preprocessing dataset...")
     transactions, technique_names = data_preprocessing.preprocess_dataset(raw_data)
+    if not transactions:
+        raise ValueError("No transactions were generated.")
     print("Preprocessing completed!")
     print("Number of transactions:", len(transactions))
 
-    # 4. Extract techniques only
+    # 4. Extract ATT&CK techniques from transactions
     print("\n4. Extracting ATT&CK techniques...")
     technique_transactions = data_preprocessing.extract_techniques(transactions)
+    if not technique_transactions:
+        raise ValueError("No technique transactions were extracted.")
     print("Technique extraction completed!")
 
-    # 5. Run association rule mining
+    # 5. Run association rule mining experiments
     print("\n5. Running association rule mining...")
     support_thresholds = [0.15, 0.20, 0.25, 0.30, 0.35]
     min_confidence = 0.6
     repetitions = 5
     results = evaluation.run_experiments(technique_transactions, support_thresholds, min_confidence, repetitions)
 
-    #6. Display experiemental results 
+    #6. Display experimental results 
     print("\n6. Displaying evaluation results...")
     evaluation.display_results(results)
     evaluation.display_rules(results)
 
-    #7. Validate algorithm agreement
+    #7. Validate agreement between Apriori and FP-Growth
     print("\n7. Validating algorithm agreement...")
-    assert all(result["itemsets_agree"] for result in results)
-    assert all(result["rules_agree"] for result in results)
+    if not all(result["itemsets_agree"] for result in results):
+        raise RuntimeError("Apriori and FP-Growth itemsets do not agree.")
+
+    if not all(result["rules_agree"] for result in results):
+        raise RuntimeError("Apriori and FP-Growth rules do not agree.")
     print("Both algorithms produced consistent results!")
 
     #8. Generate Visualization
     print("\n8. Generating Visualization...")
-    visualization.visualize_results(results, technique_names)    
+    # visualization.visualize_results(results, technique_names)    
 
     print("\n========== Project executed successfully ==========")
 
