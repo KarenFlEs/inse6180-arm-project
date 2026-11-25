@@ -1,13 +1,10 @@
 '''
-Preprocess the MITRE ATT&CK Dataset 
-and convert it into Transactions for ARM
-
-Each intrusion set (group) represents a transaction
-containing the attack techniques associated with that group 
+Preprocess the MITRE ATT&CK Dataset and convert it into Transactions for ARM
+Each intrusion set (group) represents a transaction containing the attack techniques associated with that group 
 '''
 
-# Extract Relevant STIX Objects
 def extract_relevant_objects(raw_data):
+    """Extract intrusion sets, attack patterns and relationships"""
     objects = raw_data.get('objects', [])
 
     # Intrusion Sets represent Threat Groups  
@@ -40,8 +37,9 @@ def extract_relevant_objects(raw_data):
 
     return intrusion_sets, attack_patterns, relationships
 
-# Extract Group-to-technique relationships 
+
 def extract_group_technique_relationships(intrusion_sets, attack_patterns, relationships):
+    """Extract group-to-technique relationships """
     group_technique_relationships = []
     
     for rel in relationships:
@@ -56,12 +54,13 @@ def extract_group_technique_relationships(intrusion_sets, attack_patterns, relat
     
     return group_technique_relationships
 
-# Create ARM Transactions
+
 def create_transactions(intrusion_sets, attack_patterns, group_technique_relationships):
+    """Create Assoication-Rule Mining Transactions"""
     transactions = []
     technique_names = {}
 
-    # Each key is an intrusion set ID and the values as the techniques used 
+    # Each instrusion set represents a transaction containing the techniques it uses
     group_techniques = {
         group_id: set()
         for group_id in intrusion_sets
@@ -71,18 +70,19 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
         group_id = rel.get("source_ref")
         attack_pattern_id = rel.get("target_ref")
 
-        # Extract the MITRE Technique external ID
+        # Extract the attack pattern
         attack_pattern = attack_patterns.get(attack_pattern_id)
-
-        # Skip missing attack patterns
         if not attack_pattern:
             continue
 
-        # Extract technique name
+        # Extract the technique name
         technique_name = attack_pattern.get("name")
+        if not technique_name:
+            continue
 
+        # Extract the MITRE Technique external ID
         for ref in attack_pattern.get("external_references", []):
-            if ref.get("source_name") == "mitre-attack" and ref.get("external_id"):
+            if (ref.get("source_name") == "mitre-attack" and ref.get("external_id")):
                 technique_external_id = ref.get("external_id")
 
                 # Associate the technique with its group
@@ -92,6 +92,7 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
                 technique_names[technique_external_id] = technique_name
                 break # No need to keep searching for further references
 
+    # Create one transaction per non-empty intrusion set
     for group_id, techniques in group_techniques.items():
 
         if techniques:
@@ -104,8 +105,9 @@ def create_transactions(intrusion_sets, attack_patterns, group_technique_relatio
             })
     return transactions, technique_names
 
-# 4. Display preprocessing results
+
 def display_preprocessing_results(intrusion_sets, attack_patterns, group_technique_relationships, transactions):
+    """Displays preprocessing results"""
     print("\n========== PREPROCESSING RESULTS ==========")
 
     # Extract unique techniques
@@ -130,12 +132,10 @@ def display_preprocessing_results(intrusion_sets, attack_patterns, group_techniq
     # Display dataset statistics
     print("Number of intrusion sets:", len(intrusion_sets))
     print("Number of attack patterns:", len(attack_patterns))
-    print("Number of valid group-technique relationships:",
-        len(group_technique_relationships))
+    print("Number of valid group-technique relationships:", len(group_technique_relationships))
 
     # Display transaction statistics
     print("\n========== TRANSACTION VALIDATION ==========")
-
     print("Number of non-empty transactions:", len(transactions))
     print("Number of empty groups:", len(empty_groups))
     print("Number of unique techniques:", len(unique_techniques))
@@ -151,8 +151,8 @@ def display_preprocessing_results(intrusion_sets, attack_patterns, group_techniq
         print("Techniques:", transaction["techniques"])
 
 
-# 5. Execute the preprocessing pipeline
 def preprocess_dataset(raw_data):
+    """Execute the preprocessing pipeline"""
     intrusion_sets, attack_patterns, relationships = extract_relevant_objects(raw_data)
     group_technique_relationships = extract_group_technique_relationships(intrusion_sets,attack_patterns,relationships)
     transactions, technique_names = create_transactions(intrusion_sets,attack_patterns,group_technique_relationships)
@@ -160,8 +160,9 @@ def preprocess_dataset(raw_data):
     
     return transactions, technique_names
 
-# 6. Extract only the ATT&CK Techniques from each transaction
+
 def extract_techniques(transactions):
+    """Extract only the ATT&CK Techniques from each transaction"""
     technique_transactions = []
 
     for transaction in transactions:

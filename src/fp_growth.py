@@ -1,4 +1,4 @@
-'''Implement FP_Growth Algorithm'''
+'''Implement FP-Growth Algorithm'''
 
 from collections import Counter 
 import math
@@ -20,6 +20,7 @@ class FPTree:
         self.build_tree(data, weights)
 
     def build_tree(self, data, weights=None):
+        """Build the FP-Tree and its header table."""
         if weights is None:
             weights = [1] * len(data)
 
@@ -50,11 +51,12 @@ class FPTree:
             self.insert_node(ordered, weight)
 
 
-    # Insert data transactions into FPTree
     def insert_node(self, transaction, weight=1):
+        """Insert a transaction into the FP-Tree."""
         current = self.root
+
         for item in transaction:
-            # If a child already exists, imcrement its count. Otherwise, create a new one 
+            # Incremet an exisiting node or create a new one
             if item in current.children:
                 current.children[item].count += weight
             else:
@@ -74,7 +76,7 @@ class FPTree:
 
 
 def get_prefix_path(node):
-    # Retrieve prefix path 
+    """Retrieve te prefix path of a node"""
     path = []
     current = node.parent
 
@@ -85,6 +87,8 @@ def get_prefix_path(node):
     return path[::-1]
 
 def mine_tree(tree, minsup, prefix, patterns):
+    """Recursively mine frequent patterns from an FP-Tree."""
+
     # Iterate through the header table
     for item, info in tree.header_table.items():
         support_count = info[0]
@@ -107,7 +111,7 @@ def mine_tree(tree, minsup, prefix, patterns):
         if conditional_pattern_base:
             conditional_data = [path for path, count in conditional_pattern_base]
             conditional_weights = [count for path, count in conditional_pattern_base]
-            conditional_tree = FPTree(conditional_data,minsup,conditional_weights)
+            conditional_tree = FPTree(conditional_data, minsup, conditional_weights)
 
             # Recursively mine conditional tree
             if conditional_tree.header_table:
@@ -116,15 +120,26 @@ def mine_tree(tree, minsup, prefix, patterns):
     return patterns
 
 def fp_growth(data, minsup):
-    # Convert relative support to absolute support
-    minsup = math.ceil(minsup * len(data))
+    """Apply FP-Growth to identify frequent itemsets"""
+
+    if not data:
+        return {}
+    
+    # Convert relative support to absolute support for mining purpose
+    abs_minsup = math.ceil(minsup * len(data))
 
     # Build initial FP-Tree
-    tree = FPTree(data, minsup)
+    tree = FPTree(data, abs_minsup)
     patterns = {}
 
     # Start mining
-    mine_tree(tree, minsup, set(), patterns)
+    mine_tree(tree, abs_minsup, set(), patterns)
 
-    return patterns
+    # Convert absolute support counts to relative support
+    frequent_itemsets = {
+        itemset: abs_support / len(data)
+        for itemset, abs_support in patterns.items()
+    }
+
+    return frequent_itemsets
 

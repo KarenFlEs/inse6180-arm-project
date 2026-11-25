@@ -3,25 +3,16 @@
 from itertools import combinations
 
 def apriori (data, minsup):
-    """
-    Apriori algorithm.
-
-    Parameters:
-        db: List of transactions (each transaction is a set of items).
-        minsup: Minimum support threshold (between 0 and 1).
-
-    Returns:
-        Dictionary containing frequent itemsets and their support.
-    """
+    """Apply Apriori algorithm to identify frequent itemsets"""
     if not data:
         return {}
 
     # Find frequent 1-itemsets
-    items = set (item for t in data for item in t)
+    items = set (item for transaction in data for item in transaction)
     L = {}
 
     for item in items:
-        support = sum(item in t for t in data) / len(data)
+        support = sum(item in transaction for transaction in data) / len(data)
         if support >= minsup:
             L[frozenset([item])] = support
 
@@ -29,7 +20,7 @@ def apriori (data, minsup):
     k = 1
 
     while L:
-        # Generatye candidates 
+        # Generate candidates 
         candidates = set()
         frequent_itemsets = list(L.keys())
 
@@ -37,8 +28,9 @@ def apriori (data, minsup):
             for j in range(i + 1, len(frequent_itemsets)): 
                 candidate = (frequent_itemsets[i] | frequent_itemsets[j])
 
-                 # Only generate candidates of size k+1
+                # Only generate candidates of size k+1
                 if len(candidate) == k + 1:
+
                     # Prune candidates
                     if all(
                         frozenset(subset) in L
@@ -46,11 +38,11 @@ def apriori (data, minsup):
                     ):
                         candidates.add(candidate)
 
-        # Calculate support
+        # Calculate support for candidate itemsets
         L_next = {}
 
         for candidate in candidates:
-            support = sum(candidate.issubset(t) for t in data) / len(data)
+            support = sum(candidate.issubset(transaction) for transaction in data) / len(data)
             if support >= minsup:
                 L_next[candidate] = support
 

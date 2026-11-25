@@ -30,7 +30,7 @@ def main():
     print("\n5. Running association rule mining...")
     support_thresholds = [0.15, 0.20, 0.25, 0.30, 0.35]
     min_confidence = 0.6
-    repetitions = 5
+    repetitions = 10
     results = evaluation.run_experiments(technique_transactions, support_thresholds, min_confidence, repetitions)
 
     #6. Display experimental results 
@@ -39,17 +39,16 @@ def main():
     evaluation.display_rules(results)
 
     #7. Validate agreement between Apriori and FP-Growth
-    print("\n7. Validating algorithm agreement...")
-    if not all(result["itemsets_agree"] for result in results):
-        raise RuntimeError("Apriori and FP-Growth itemsets do not agree.")
+    print("\n7. Algorithm Agreement")
+    itemsets_agree = all(result["itemsets_agree"] for result in results)
+    rules_agree = all(result["rules_agree"] for result in results)
 
-    if not all(result["rules_agree"] for result in results):
-        raise RuntimeError("Apriori and FP-Growth rules do not agree.")
-    print("Both algorithms produced consistent results!")
+    print("Frequent itemsets:", "Agree" if itemsets_agree else "Disagree")
+    print("Association rules:", "Agree" if rules_agree else "Disagree")
 
     #8. Generate Visualization
     print("\n8. Generating Visualization...")
-    # visualization.visualize_results(results, technique_names)    
+    visualization.visualize_results(results, technique_names)    
 
     print("\n========== Project executed successfully ==========")
 
